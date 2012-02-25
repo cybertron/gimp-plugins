@@ -4,7 +4,7 @@
 from gimpfu import *
 from gimpenums import *
 
-def innerglow(image, drawable, color, strength, size, separate):
+def innerglow(image, drawable, color, strength, size, outer, separate):
    gimp.tile_cache_ntiles(64) # Ah, much better
    width = drawable.width
    height = drawable.height
@@ -22,19 +22,31 @@ def innerglow(image, drawable, color, strength, size, separate):
    # a light border around the inside of the selection
    pdb.gimp_selection_all(image)
    pdb.gimp_edit_fill(glowlayer, FOREGROUND_FILL)
-   # Delete inside of selection
+   
    pdb.gimp_selection_load(channel)
-   pdb.gimp_selection_shrink(image, strength)
-   pdb.gimp_edit_clear(glowlayer)
-   # Blur what's left inside of selection
+   if not outer:
+      # Delete inside of selection
+      pdb.gimp_selection_shrink(image, strength)
+      pdb.gimp_edit_clear(glowlayer)
+   else:
+      pdb.gimp_selection_grow(image, strength)
+      pdb.gimp_selection_invert(image)
+      pdb.gimp_edit_clear(glowlayer)
+      
+   # Blur what's left
    pdb.gimp_selection_load(channel)
+   if outer:
+      pdb.gimp_selection_invert(image)
    pdb.plug_in_gauss_rle2(image, glowlayer, size, size)
-   # Delete everything outside of the selection
+   
+   # Delete everything we don't want
    pdb.gimp_selection_invert(image)
    if not pdb.gimp_selection_is_empty(image):
       pdb.gimp_edit_clear(glowlayer)
+      
    # It's extremely annoying to have the selection inverted after this runs
-   pdb.gimp_selection_invert(image)
+   if not outer:
+      pdb.gimp_selection_invert(image)
 
    if not separate:
       pdb.gimp_image_merge_down(image, glowlayer, EXPAND_AS_NECESSARY)
@@ -44,19 +56,20 @@ def innerglow(image, drawable, color, strength, size, separate):
    pdb.gimp_image_undo_group_end(image)
    
 
-register("innerglow",
-         N_("Add glow inside a selection"),
+register("glow",
+         N_("Add glow to a selection"),
          "Help",
          "Cybertron",
          "Ben Nemec",
          "2009",
-         "Inner Glow...",
+         "Glow...",
          "*",
          [(PF_IMAGE, "image", "Input image", None),
           (PF_DRAWABLE, "drawable", "Input drawable", None),
           (PF_COLOR, "color", "Color", (255, 255, 255)),
           (PF_SPINNER, "strength", "Strength", 10, (1, 10000, 1)),
           (PF_SPINNER, "size", "Size", 10, (1, 10000, 1)),
+          (PF_BOOL, "outer", "Outer", False),
           (PF_BOOL, "separate", "Keep as Separate Layer", True)
           ],
          [],
