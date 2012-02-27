@@ -11,7 +11,7 @@ def innerglow(image, drawable, color, strength, size, outer, separate):
    
    pdb.gimp_image_undo_group_start(image)
    
-   glowlayer = gimp.Layer(image, "Inner Glow", width, height, RGBA_IMAGE, 100, NORMAL_MODE)
+   glowlayer = gimp.Layer(image, "Glow", width, height, RGBA_IMAGE, 100, NORMAL_MODE)
    image.add_layer(glowlayer, -1)
    savecolor = pdb.gimp_context_get_foreground()
    pdb.gimp_context_set_foreground(color)
